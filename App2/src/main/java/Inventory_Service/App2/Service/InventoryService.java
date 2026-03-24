@@ -16,8 +16,10 @@ public class InventoryService {
 
    public void create(InventoryRequest inventoryRequest){
         InventoryEntity inventory= new InventoryEntity(
-        inventoryRequest.getProductId(),
-                inventoryRequest.getQuantity()
+       inventoryRequest.getProductId(),
+               inventoryRequest.getQuantity()
+//                inventory.setProductId(inventoryRequest.getProductId()),
+//                inventory.setQuantity(inventoryRequest.getQuantity())
         );
         repo.save(inventory);
    }

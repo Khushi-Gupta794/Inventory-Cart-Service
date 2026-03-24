@@ -32,17 +32,18 @@ public class CartService {
         }
 
         // 3. Call CommerceTools
-        return ctService.addToCart(
-                addtoCartRequest.getCartId(),
-                addtoCartRequest.getVersion(),
+        return ctService.createCartAndAddItem(
+              //  addtoCartRequest.getCartId(),
+//              addtoCartRequest.getVersion(),
                 addtoCartRequest.getProductId(),
                 addtoCartRequest.getQuantity()
         );
     }
 
-    public String fallbackInventory(AddtoCartRequest addtoCartRequest, Throwable t){
-//        System.out.println("Fallback triggered due to: " + t.getMessage());
-//        return "inventory service is down";
-        throw new RuntimeException("Inventory service down. Try later.");
+    public String fallbackInventory(AddtoCartRequest addtoCartRequest, Exception e){
+    System.out.println("Fallback triggered due to: " + e.getMessage());
+    return "inventory service is down";
+//        System.out.println("message: "get);
+      //  throw new RuntimeException("Inventory service down. Try later.");
     }
 }

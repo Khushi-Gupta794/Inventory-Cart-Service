@@ -15,4 +15,13 @@ public interface InventoryClient {
 
     @PostMapping("api/inventory/check")
     InventoryResponse checkStock(InventoryCheckRequest request);
+
+    @PostMapping("api/inventory/reduce")
+    void reduce(@RequestBody InventoryCheckRequest inventoryCheckRequest);
+
+
+
+
+
+
 }

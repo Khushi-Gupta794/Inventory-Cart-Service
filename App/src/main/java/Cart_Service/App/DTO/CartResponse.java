@@ -1,27 +1,22 @@
 package Cart_Service.App.DTO;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.Data;
+
+import java.util.List;
+
+@Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class CartResponse {
-    private String message;
-    private Object data;
-
-    public String getMessage() {
-        return message;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
-    }
-
-    public Object getData() {
-        return data;
-    }
-
-    public void setData(Object data) {
-        this.data = data;
-    }
-
-    public CartResponse(String message, Object data) {
-        this.message = message;
-        this.data = data;
-    }
+    private String type;
+    private String id;
+    private int version;          //version updates after every CT call
+    private String cartState;
+    private String taxMode;
+    private String customerId;
+    private List<LineItem> lineItems;   // typed now — need lineItemId from here
+    private TotalPrice totalPrice;
+    private String shippingMode;
+    private String inventoryMode;
+    private String origin;
 }

@@ -16,6 +16,7 @@ public class CartResponse {
     private String customerId;
     private List<LineItem> lineItems;   // typed now — need lineItemId from here
     private TotalPrice totalPrice;
+    private TaxedPrice taxedPrice;  //to get the tax setted details
     private String shippingMode;
     private String inventoryMode;
     private String origin;

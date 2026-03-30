@@ -10,4 +10,5 @@ public class LineItem {
     private String productId;
     private int quantity;
     private TotalPrice totalPrice;
+    private TaxedPrice taxedPrice; //as iam doing addlineitem and settax in one call then ct returns taxed price after tax setted
 }

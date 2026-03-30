@@ -16,4 +16,14 @@ public class CartAction {
     // For setLineItemTaxAmount
     private String lineItemId;
     private ExternalTaxAmount externalTaxAmount;
+
+    //update changes added for the shipping part as now all will have the same url
+    // setShippingAddress field
+    private ShippingAddress address;
+
+    // setShippingMethod field
+    private ShippingMethodReference shippingMethod;
+
+    // setCartTotalTax field
+    private Money externalTotalGross;
 }

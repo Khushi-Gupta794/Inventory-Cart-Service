@@ -1,26 +1,22 @@
 package Cart_Service.App.Service;
 
 import Cart_Service.App.DTO.*;
-import Cart_Service.App.FeignClient.CTCartClient;
 import Cart_Service.App.FeignClient.InventoryClient;
-import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import Cart_Service.App.FeignClient.MeCustomerClient;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-
 @Service
-public class CartServiceNew {
+public class MeCartService {
+    private final MeCustomerClient meCustomerClient;    // /me/carts endpoints
     private final InventoryClient inventoryClient;
-    private final CTCartClient ctCartClient;
 
-    public CartServiceNew(InventoryClient inventoryClient,CTCartClient ctCartClient){
-        this.inventoryClient=inventoryClient;
-        this.ctCartClient=ctCartClient;
+    public MeCartService(MeCustomerClient meCustomerClient, InventoryClient inventoryClient){
+        this.inventoryClient= inventoryClient;
+        this.meCustomerClient = meCustomerClient;
     }
 
-
-    @CircuitBreaker(name="App2", fallbackMethod = "fallbackInventory")
-    public CartResponse addToCart(String cartId, String productId, int quantity) {
+    public CartResponse addToMyCart(String cartId, String productId, int quantity) {
 
         // Inventory Check
         InventoryCheckRequest inventoryRequest = new InventoryCheckRequest();
@@ -38,7 +34,20 @@ public class CartServiceNew {
         }
 
         // Get current cart (need version)
-        CartResponse currentCart = ctCartClient.getCart(cartId).getBody();
+       CartResponse currentCart = meCustomerClient.getCart(cartId).getBody();
+
+//        CartResponse currentCart;
+//        try {
+//            currentCart = meCustomerClient.getMyActiveCart(token).getBody();
+//        } catch (Exception e) {
+//            // No active cart — create one
+//            CartRequest cartRequest = new CartRequest();
+//            cartRequest.setCurrency("USD");
+//            cartRequest.setTaxMode("ExternalAmount");
+//            currentCart = meCustomerClient.createMyCart(token, cartRequest).getBody();
+//        }
+//
+//        String cartId = currentCart.getId();
 
         // addLineItem
         CartAction addAction = new CartAction();
@@ -53,7 +62,7 @@ public class CartServiceNew {
 
         //here iam calling my controller once, but in ct two api calls as per the actions because one
         //return lineitemid other uses that to add tax, not possible in one ct call especially for external amount
-        CartResponse cartAfterAdd = ctCartClient.updateCart(cartId, addRequest).getBody();
+        CartResponse cartAfterAdd = meCustomerClient.updateMyCart(cartId, addRequest).getBody();
 
         // ── Debug ──────────────────────────────────────
         System.out.println("LineItems count: " + cartAfterAdd.getLineItems().size());
@@ -75,7 +84,7 @@ public class CartServiceNew {
         System.out.println("lineItemId: " + lineItemId);
         System.out.println("unitCentAmount: " + unitCentAmount);
 
- // calculations dynamically
+        // calculations dynamically
         double taxRate_amount = 0.14;
         long totalGrossCentAmount = Math.round(unitCentAmount * (1 + taxRate_amount));
 
@@ -105,7 +114,7 @@ public class CartServiceNew {
         taxRequest.setVersion(cartAfterAdd.getVersion());  //use updated version
         taxRequest.setActions(List.of(taxAction));
 
-        CartResponse finalCart = ctCartClient.updateCart(cartId, taxRequest).getBody();
+        CartResponse finalCart = meCustomerClient.updateMyCart(cartId, taxRequest).getBody();
 
         //after adding item the quantity should be reduced
         InventoryCheckRequest reduceRequest = new InventoryCheckRequest();
@@ -114,12 +123,12 @@ public class CartServiceNew {
 
         inventoryClient.reduce(reduceRequest);
 
-       return finalCart;
+        return finalCart;
     }
 
 
     //for shipping part
-    public CartResponse addShipping(ShippingRequest request) {
+    public CartResponse addMyShipping(ShippingRequest request) {
 
         // setShippingAddress ─────────────────
         ShippingAddress address = new ShippingAddress();
@@ -141,8 +150,8 @@ public class CartServiceNew {
         addressRequest.setVersion(request.getVersion());
         addressRequest.setActions(List.of(addressAction));
 
-        CartResponse afterAddress = ctCartClient
-                .updateCart(request.getCartId(), addressRequest).getBody();
+        CartResponse afterAddress = meCustomerClient
+                .updateMyCart(request.getCartId(), addressRequest).getBody();
 
         // ─ setShippingMethod ──────────────────
         ShippingMethodReference methodRef = new ShippingMethodReference();
@@ -157,8 +166,8 @@ public class CartServiceNew {
         methodRequest.setVersion(afterAddress.getVersion());   //updated version
         methodRequest.setActions(List.of(methodAction));
 
-        CartResponse afterMethod = ctCartClient
-                .updateCart(request.getCartId(), methodRequest).getBody();
+        CartResponse afterMethod = meCustomerClient
+                .updateMyCart(request.getCartId(), methodRequest).getBody();
 
         //  setShippingMethodTaxAmount ─────────
         Money shippingGross = new Money();
@@ -182,8 +191,8 @@ public class CartServiceNew {
         shippingTaxRequest.setVersion(afterMethod.getVersion());
         shippingTaxRequest.setActions(List.of(shippingTaxAction));
 
-        CartResponse afterShippingTax = ctCartClient
-                .updateCart(request.getCartId(), shippingTaxRequest).getBody();
+        CartResponse afterShippingTax = meCustomerClient
+                .updateMyCart(request.getCartId(), shippingTaxRequest).getBody();
 
         //  setCartTotalTax ────────────────────
 //        Money totalGross = new Money();
@@ -230,16 +239,122 @@ public class CartServiceNew {
         totalTaxRequest.setVersion(afterShippingTax.getVersion());
         totalTaxRequest.setActions(List.of(totalTaxAction));
 
-        return ctCartClient
-                .updateCart(request.getCartId(), totalTaxRequest).getBody();
+        return meCustomerClient
+                .updateMyCart(request.getCartId(), totalTaxRequest).getBody();
     }
 
 
+    public OrderResponse placeMyOrder(String cartId, int version){
+//        CartResponse cart = ctCartClient.getCart(cartId).getBody();  //first check line item
+//
+//        //place request
+////        OrderRequest orderRequest = new OrderRequest();
+////        orderRequest.setCartId(cartId);
+////        orderRequest.setVersion(version);
+//
+//        CartReference cartRef = new CartReference();
+//        cartRef.setId(cartId);
+//        cartRef.setTypeId("cart");
+//
+//        OrderRequest orderRequest = new OrderRequest();
+//        orderRequest.setCart(cartRef);
+//        orderRequest.setVersion(version);
+//
+//        OrderResponse orderResponse = ctOrderClient.createOrder(orderRequest).getBody();
+//
+//        return orderResponse;
+//
 
-    //fallback method
-    public String fallbackInventory(String cartId, String productId, int quantity, Exception e){
-     System.out.println("Fallback triggered due to: " + e.getMessage());
-  return "inventory service is down";
+        //  Get cart
+        CartResponse cart = meCustomerClient.getCart(cartId).getBody();
 
-   }
+        // ── Step 2: Inventory check ────────────────
+        for (LineItem item : cart.getLineItems()) {
+            InventoryCheckRequest inventoryRequest = new InventoryCheckRequest();
+            inventoryRequest.setProductId(item.getProductId());
+            inventoryRequest.setQuantity(item.getQuantity());
+
+            InventoryResponse inventoryResponse =
+                    inventoryClient.checkStock(inventoryRequest);
+
+            if (!inventoryResponse.isAvailable()) {
+                throw new RuntimeException(
+                        "Product " + item.getProductId() + " is out of stock"
+                );
+            }
+            if (inventoryResponse.getAvailableQuantity() < item.getQuantity()) {
+                throw new RuntimeException(
+                        "Insufficient stock for product " + item.getProductId()
+                );
+            }
+        }
+
+        // ── Step 3: Fix tax on any line item missing it ──
+        CartResponse currentCart = cart;
+
+        for (LineItem item : currentCart.getLineItems()) {
+            if (item.getTaxedPrice() == null) {
+
+                System.out.println("Tax missing for lineItem: " + item.getId() + "fixing...");
+
+                // Calculate gross dynamically
+                long itemTotal = item.getTotalPrice().getCentAmount();
+                double taxRate = 0.14;
+                long grossAmount = Math.round(itemTotal * (1 + taxRate));
+
+                Money totalGross = new Money();
+                totalGross.setCurrencyCode("USD");
+                totalGross.setCentAmount(grossAmount);
+
+                TaxRate taxRateObj = new TaxRate();
+                taxRateObj.setName("myTaxRate");
+                taxRateObj.setAmount(taxRate);
+                taxRateObj.setIncludedInPrice(false);
+                taxRateObj.setCountry("US");
+
+                ExternalTaxAmount externalTaxAmount = new ExternalTaxAmount();
+                externalTaxAmount.setTotalGross(totalGross);
+                externalTaxAmount.setTaxRate(taxRateObj);
+
+                CartAction taxAction = new CartAction();
+                taxAction.setAction("setLineItemTaxAmount");
+                taxAction.setLineItemId(item.getId());
+                taxAction.setExternalTaxAmount(externalTaxAmount);
+
+                CartUpdateRequest taxRequest = new CartUpdateRequest();
+                taxRequest.setVersion(currentCart.getVersion());
+                taxRequest.setActions(List.of(taxAction));
+
+                // Update cart and keep latest version
+                currentCart = meCustomerClient.updateMyCart(cartId, taxRequest).getBody();
+
+                System.out.println("Tax fixed for lineItem: " + item.getId());
+            }
+        }
+
+        // ── Step 4: Place order ────────────────────
+        CartReference cartRef = new CartReference();
+        cartRef.setId(cartId);
+        cartRef.setTypeId("cart");
+
+//        OrderRequest orderRequest = new OrderRequest();
+//        orderRequest.setCart(cartRef);
+//        orderRequest.setVersion(version);
+        OrderRequest orderRequest = new OrderRequest();
+        orderRequest.setCart(cartRef);
+        orderRequest.setVersion(currentCart.getVersion());  //use latest version
+
+        OrderResponse order = meCustomerClient.placeMyOrder(orderRequest).getBody();
+
+        // ── Step 5: Reduce stock ───────────────────
+        for (LineItem item : cart.getLineItems()) {
+            InventoryCheckRequest reduceRequest = new InventoryCheckRequest();
+            reduceRequest.setProductId(item.getProductId());
+            reduceRequest.setQuantity(item.getQuantity());
+            inventoryClient.reduce(reduceRequest);
+        }
+
+        return order;
+    }
+
 }

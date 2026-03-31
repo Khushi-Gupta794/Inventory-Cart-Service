@@ -1,6 +1,7 @@
 package Cart_Service.App.Service;
 
 import Cart_Service.App.DTO.LoginResponse;
+import Cart_Service.App.DTO.MeCustomerTokenResponse;
 import Cart_Service.App.FeignClient.CTAuthClient;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -36,6 +37,22 @@ public class TokenService {
                 "manage_project:" + projectKey
         );
 
+        return response.getAccess_token();
+    }
+
+
+    public String getCustomerToken(String email, String password){
+        String credentials = clientId + ":" + clientSecret;
+        String basicAuth = "Basic " + Base64.getEncoder().encodeToString(credentials.getBytes());
+
+        MeCustomerTokenResponse response = ctAuthClient.customerLogin(
+                  basicAuth,
+                "password",
+                email,
+                password,
+                "manage_project:" + projectKey
+
+        );
         return response.getAccess_token();
     }
 }

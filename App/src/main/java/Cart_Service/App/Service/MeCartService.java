@@ -8,16 +8,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+
 @Service
 public class MeCartService {
     private final MeCustomerClient meCustomerClient;    // /me/carts endpoints
     private final InventoryClient inventoryClient;
     private final CTCartClient ctCartClient;
 
-    public MeCartService(MeCustomerClient meCustomerClient, InventoryClient inventoryClient,CTCartClient ctCartClient){
-        this.inventoryClient= inventoryClient;
+    public MeCartService(MeCustomerClient meCustomerClient, InventoryClient inventoryClient, CTCartClient ctCartClient) {
+        this.inventoryClient = inventoryClient;
         this.meCustomerClient = meCustomerClient;
-        this.ctCartClient=ctCartClient;
+        this.ctCartClient = ctCartClient;
     }
 
     public CartResponse addToMyCart(String productId, int quantity) {
@@ -38,7 +39,7 @@ public class MeCartService {
         }
 
         // Get current cart (need version)
-    //   CartResponse currentCart = meCustomerClient.getCart(cartId).getBody();
+        //   CartResponse currentCart = meCustomerClient.getCart(cartId).getBody();
 
         CartResponse currentCart;
         try {
@@ -138,7 +139,7 @@ public class MeCartService {
             System.out.println("JSON error: " + e.getMessage());
         }
 
-        CartResponse finalCart = meCustomerClient.updateMyCart(cartId, taxRequest).getBody();
+        CartResponse finalCart = ctCartClient.updateCart(cartId, taxRequest).getBody();
 
         //after adding item the quantity should be reduced
         InventoryCheckRequest reduceRequest = new InventoryCheckRequest();
@@ -215,8 +216,8 @@ public class MeCartService {
         shippingTaxRequest.setVersion(afterMethod.getVersion());
         shippingTaxRequest.setActions(List.of(shippingTaxAction));
 
-        CartResponse afterShippingTax = meCustomerClient
-                .updateMyCart(request.getCartId(), shippingTaxRequest).getBody();
+        CartResponse afterShippingTax = ctCartClient
+                .updateCart(request.getCartId(), shippingTaxRequest).getBody();
 
         //  setCartTotalTax ────────────────────
 //        Money totalGross = new Money();
@@ -263,12 +264,12 @@ public class MeCartService {
         totalTaxRequest.setVersion(afterShippingTax.getVersion());
         totalTaxRequest.setActions(List.of(totalTaxAction));
 
-        return meCustomerClient
-                .updateMyCart(request.getCartId(), totalTaxRequest).getBody();
+        return ctCartClient
+                .updateCart(request.getCartId(), totalTaxRequest).getBody();
     }
 
 
-    public OrderResponse placeMyOrder(String cartId, int version){
+    public OrderResponse placeMyOrder(String cartId, int version) {
 //        CartResponse cart = ctCartClient.getCart(cartId).getBody();  //first check line item
 //
 //        //place request
@@ -290,7 +291,8 @@ public class MeCartService {
 //
 
         //  Get cart
-        CartResponse cart = meCustomerClient.getCart(cartId).getBody();
+       // CartResponse cart = meCustomerClient.getCart(cartId).getBody();
+        CartResponse cart = meCustomerClient.getMyActiveCart().getBody();
 
         // ── Step 2: Inventory check ────────────────
         for (LineItem item : cart.getLineItems()) {
@@ -350,7 +352,7 @@ public class MeCartService {
                 taxRequest.setActions(List.of(taxAction));
 
                 // Update cart and keep latest version
-               /// currentCart = meCustomerClient.updateMyCart(cartId, taxRequest).getBody();
+                /// currentCart = meCustomerClient.updateMyCart(cartId, taxRequest).getBody();
                 currentCart = ctCartClient.updateCart(cartId, taxRequest).getBody();
 
                 System.out.println("Tax fixed for lineItem: " + item.getId());

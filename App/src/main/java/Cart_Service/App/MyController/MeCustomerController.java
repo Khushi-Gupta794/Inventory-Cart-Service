@@ -25,7 +25,7 @@ public class MeCustomerController {
     @PostMapping("/cart/add")
     public ResponseEntity<CartResponse> addToCart(@RequestBody AddToCartRequest request) {
         return ResponseEntity.ok(meCartService.addToMyCart(
-                request.getCartId(),
+               // request.getCartId(),
                 request.getProductId(),
                 request.getQuantity()
         ));

@@ -6,7 +6,7 @@ import org.springframework.context.annotation.Bean;
 
 public class CustomerFeignConfig {
     @Bean
-    public RequestInterceptor customerTokenInterceptor(HttpServletRequest httpServletRequest) {
-        return new CustomerInterceptor(httpServletRequest);
+    public RequestInterceptor customerTokenInterceptor() {
+        return new CustomerInterceptor();
     }
 }

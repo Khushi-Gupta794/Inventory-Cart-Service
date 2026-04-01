@@ -34,5 +34,5 @@ public interface MeCustomerClient {
     @PostMapping("/ecom-app-123456/me/orders")
     ResponseEntity<OrderResponse> placeMyOrder(
          //   @RequestHeader("Authorization") String token,
-            @RequestBody OrderRequest orderRequest);
+            @RequestBody MeOrderRequest meOrderRequest);
 }

@@ -5,7 +5,7 @@ import lombok.Data;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class ExternalTaxAmount {
-    private Money totalGross;
-    private TaxRate taxRate;
+public class MeOrderRequest {
+    private String id;       // cartId directly
+    private int version;
 }

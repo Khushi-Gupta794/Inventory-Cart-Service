@@ -1,8 +1,10 @@
 package Cart_Service.App.Service;
 
 import Cart_Service.App.DTO.*;
+import Cart_Service.App.FeignClient.CTCartClient;
 import Cart_Service.App.FeignClient.InventoryClient;
 import Cart_Service.App.FeignClient.MeCustomerClient;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -10,13 +12,15 @@ import java.util.List;
 public class MeCartService {
     private final MeCustomerClient meCustomerClient;    // /me/carts endpoints
     private final InventoryClient inventoryClient;
+    private final CTCartClient ctCartClient;
 
-    public MeCartService(MeCustomerClient meCustomerClient, InventoryClient inventoryClient){
+    public MeCartService(MeCustomerClient meCustomerClient, InventoryClient inventoryClient,CTCartClient ctCartClient){
         this.inventoryClient= inventoryClient;
         this.meCustomerClient = meCustomerClient;
+        this.ctCartClient=ctCartClient;
     }
 
-    public CartResponse addToMyCart(String cartId, String productId, int quantity) {
+    public CartResponse addToMyCart(String productId, int quantity) {
 
         // Inventory Check
         InventoryCheckRequest inventoryRequest = new InventoryCheckRequest();
@@ -34,20 +38,20 @@ public class MeCartService {
         }
 
         // Get current cart (need version)
-       CartResponse currentCart = meCustomerClient.getCart(cartId).getBody();
+    //   CartResponse currentCart = meCustomerClient.getCart(cartId).getBody();
 
-//        CartResponse currentCart;
-//        try {
-//            currentCart = meCustomerClient.getMyActiveCart(token).getBody();
-//        } catch (Exception e) {
-//            // No active cart — create one
-//            CartRequest cartRequest = new CartRequest();
-//            cartRequest.setCurrency("USD");
-//            cartRequest.setTaxMode("ExternalAmount");
-//            currentCart = meCustomerClient.createMyCart(token, cartRequest).getBody();
-//        }
-//
-//        String cartId = currentCart.getId();
+        CartResponse currentCart;
+        try {
+            currentCart = meCustomerClient.getMyActiveCart().getBody();
+        } catch (Exception e) {
+            // No active cart — create one
+            CartRequest cartRequest = new CartRequest();
+            cartRequest.setCurrency("USD");
+            cartRequest.setTaxMode("ExternalAmount");
+            currentCart = meCustomerClient.createMyCart(cartRequest).getBody();
+        }
+
+        String cartId = currentCart.getId();
 
         // addLineItem
         CartAction addAction = new CartAction();
@@ -62,7 +66,19 @@ public class MeCartService {
 
         //here iam calling my controller once, but in ct two api calls as per the actions because one
         //return lineitemid other uses that to add tax, not possible in one ct call especially for external amount
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            System.out.println("addRequest JSON ");
+            System.out.println(mapper.writeValueAsString(addRequest));
+        } catch (Exception e) {
+            System.out.println("JSON error: " + e.getMessage());
+        }
+
         CartResponse cartAfterAdd = meCustomerClient.updateMyCart(cartId, addRequest).getBody();
+
+        System.out.println("original cartId: " + cartId);
+        System.out.println("cartAfterAdd.getId(): " + cartAfterAdd.getId());
+        System.out.println("cartAfterAdd.getVersion(): " + cartAfterAdd.getVersion());
 
         // ── Debug ──────────────────────────────────────
         System.out.println("LineItems count: " + cartAfterAdd.getLineItems().size());
@@ -113,6 +129,14 @@ public class MeCartService {
         CartUpdateRequest taxRequest = new CartUpdateRequest();
         taxRequest.setVersion(cartAfterAdd.getVersion());  //use updated version
         taxRequest.setActions(List.of(taxAction));
+
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            System.out.println("=== taxRequest JSON ===");
+            System.out.println(mapper.writeValueAsString(taxRequest));
+        } catch (Exception e) {
+            System.out.println("JSON error: " + e.getMessage());
+        }
 
         CartResponse finalCart = meCustomerClient.updateMyCart(cartId, taxRequest).getBody();
 
@@ -326,23 +350,28 @@ public class MeCartService {
                 taxRequest.setActions(List.of(taxAction));
 
                 // Update cart and keep latest version
-                currentCart = meCustomerClient.updateMyCart(cartId, taxRequest).getBody();
+               /// currentCart = meCustomerClient.updateMyCart(cartId, taxRequest).getBody();
+                currentCart = ctCartClient.updateCart(cartId, taxRequest).getBody();
 
                 System.out.println("Tax fixed for lineItem: " + item.getId());
             }
         }
 
         // ── Step 4: Place order ────────────────────
-        CartReference cartRef = new CartReference();
-        cartRef.setId(cartId);
-        cartRef.setTypeId("cart");
+//        CartReference cartRef = new CartReference();
+//        cartRef.setId(cartId);
+//        cartRef.setTypeId("cart");
 
 //        OrderRequest orderRequest = new OrderRequest();
 //        orderRequest.setCart(cartRef);
 //        orderRequest.setVersion(version);
-        OrderRequest orderRequest = new OrderRequest();
-        orderRequest.setCart(cartRef);
-        orderRequest.setVersion(currentCart.getVersion());  //use latest version
+//        OrderRequest orderRequest = new OrderRequest();
+//        orderRequest.setCart(cartRef);
+//        orderRequest.setVersion(currentCart.getVersion());  //use latest version
+
+        MeOrderRequest orderRequest = new MeOrderRequest();
+        orderRequest.setId(cartId);                        // direct cartId
+        orderRequest.setVersion(currentCart.getVersion());
 
         OrderResponse order = meCustomerClient.placeMyOrder(orderRequest).getBody();
 

@@ -25,6 +25,7 @@ repositories {
 
 ext {
     set('springCloudVersion', "2023.0.1")
+    ctVersion = "17.10.0"
 }
 
 
@@ -35,6 +36,7 @@ dependencyManagement {
 }
 
 
+
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
@@ -43,6 +45,10 @@ dependencies {
     implementation 'org.springframework.cloud:spring-cloud-starter-circuitbreaker-resilience4j'
     implementation 'org.springframework.boot:spring-boot-starter-webflux' //for webclient
     implementation 'org.springframework.boot:spring-boot-starter-actuator' //for health metric
+    //for sdk ct setup
+    implementation "com.commercetools.sdk:commercetools-sdk-java-api:${ctVersion}"
+    //http client which is needed for the sdk
+    implementation "com.commercetools.sdk:commercetools-http-client:${ctVersion}"
     compileOnly 'org.projectlombok:lombok'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	runtimeOnly 'org.postgresql:postgresql'

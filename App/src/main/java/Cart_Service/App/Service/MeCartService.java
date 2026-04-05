@@ -20,7 +20,7 @@ public class MeCartService {
         this.meCustomerClient = meCustomerClient;
         this.ctCartClient = ctCartClient;
     }
-
+  //fixes done as me will not set the tax, called the admin apis
     public CartResponse addToMyCart(String productId, int quantity) {
 
         // Inventory Check

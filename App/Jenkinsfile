@@ -1,0 +1,44 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build Cart Service') {
+            steps {
+                dir('App') {
+                    bat 'gradlew.bat clean build -x test'
+                }
+            }
+        }
+
+        stage('Test Cart Service') {
+            steps {
+                dir('App') {
+                    bat 'gradlew.bat test'
+                }
+            }
+        }
+
+        stage('Package Cart Service') {
+            steps {
+                dir('App') {
+                    bat 'gradlew.bat bootJar'
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Cart Service Build Successful!'
+        }
+        failure {
+            echo 'Cart Service Build Failed!'
+        }
+    }
+}

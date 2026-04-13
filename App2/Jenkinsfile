@@ -1,0 +1,44 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build Inventory Service') {
+            steps {
+                dir('App2') {
+                    bat 'gradlew.bat clean build -x test'
+                }
+            }
+        }
+
+        stage('Test Inventory Service') {
+            steps {
+                dir('App2') {
+                    bat 'gradlew.bat test'
+                }
+            }
+        }
+
+        stage('Package Inventory Service') {
+            steps {
+                dir('App2') {
+                    bat 'gradlew.bat bootJar'
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Inventory Service Build Successful!'
+        }
+        failure {
+            echo 'Inventory Service Build Failed!'
+        }
+    }
+}

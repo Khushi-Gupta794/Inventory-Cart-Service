@@ -11,7 +11,8 @@ pipeline {
         stage('Build Cart Service') {
             steps {
                 dir('App') {
-                    sh 'gradlew.bat clean build -x test'
+                    sh 'chmod +x gradlew'
+                    sh './gradlew clean build -x test'
                 }
             }
         }
@@ -19,7 +20,7 @@ pipeline {
         stage('Test Cart Service') {
             steps {
                 dir('App') {
-                    sh 'gradlew.bat test'
+                    sh './gradlew test'
                 }
             }
         }
@@ -27,7 +28,7 @@ pipeline {
         stage('Package Cart Service') {
             steps {
                 dir('App') {
-                    sh 'gradlew.bat bootJar'
+                    sh './gradlew bootJar'
                 }
             }
         }
